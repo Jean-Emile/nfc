@@ -3,16 +3,12 @@ package org.kevoree.android.nfc.api;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 
-import android.content.Context;
 import android.content.Intent;
 import android.nfc.TagLostException;
 
 public class NFC_Mifare_classic implements INfc {
 
-
-    public NFC_Mifare_classic() {
-
-    }
+    private boolean AUTHORIZATION_TO_WRITE_IN_SECTOR_TRAILER = false;
 
     // /////////////////////////////////////////////////////////////////
 
@@ -28,109 +24,44 @@ public class NFC_Mifare_classic implements INfc {
      * @param data : données que l'on souhaite écrire en hexadecimale 16bytes (=32 caractères hexadecimaux)
      * @param key : clé permettant l'authentification pour écrire
      * @param useAsKeyB : true si on utilise la keyB false sinon
-     * @param context
      * @return true si les données on bien été transmise
+     * @throws TagActionException
      */
-    public boolean writeInABlock(int sector, int block, String data, byte[] key, boolean useAsKeyB, Context context) {
+    public boolean writeInABlock(int sector, int block, String data, byte[] key, boolean useAsKeyB) throws TagActionException {
         int result = 0;
-        MCReader mcReader = Common.checkForTagAndCreateReader(context);
+        MCReader mcReader = Common.checkForTagAndCreateReader(null);
         if (mcReader != null) {
 
             // Si le secteur ne correspond pas à un secteur de la puce
             if (sector < 0 && sector > mcReader.getSectorCount() - 1) {
-                //	System.out.println("le secteur doit etre compris entre 0 et mcReader.getSectorCount()-1 ");
-                //	Toast.makeText(context, "le secteur doit etre compris entre 0 et mcReader.getSectorCount()-1", Toast.LENGTH_SHORT).show();
                 mcReader.close();
-                return false;
+                throw new TagActionException("le secteur doit etre compris entre 0 et mcReader.getSectorCount()-1");
             }
 
             // Si le bloc ne correspond pas à un bloc d'un secteur
             if (block < 0 && block > mcReader.getBlockCount() - 1) {
-                //	System.out.println("le bloc doit etre compris entre 0 et mcReader.getBlockCount()-1 ");
-                //	Toast.makeText(context, "le bloc doit etre compris entre 0 et mcReader.getBlockCount()-1", Toast.LENGTH_SHORT).show();
                 mcReader.close();
-                return false;
+                throw new TagActionException("le bloc doit etre compris entre 0 et mcReader.getBlockCount()-1");
             }
 
             // Si la data ne fait pas 32 caractères avec que des caractères
             // hexadécimaux
-            if (Common.isHexAnd16Byte(data, context) == false) {
-                //	Toast.makeText(context, "La data doit contenir que des caractères hexadécimaux et faire 32 caractères (16 bytes)", Toast.LENGTH_SHORT)
-                //			.show();
+            if (Common.isHexAnd16Byte(data, null) == false) {
                 mcReader.close();
-                return false;
+                throw new TagActionException("La data doit contenir que des caractères hexadécimaux et faire 32 caractères");
             }
 
             // Si le bloc choisi correspond à un bloc système
             if (block == 3 || block == 15) {
-                //	System.out.println("le bloc correspond à un bloc Système ");
-                //	Toast.makeText(context, "le bloc correspond à un bloc Système", Toast.LENGTH_SHORT).show();
-
                 mcReader.close();
-                return false;
-
-                // Si le bloc choisi corresponf au bloc id
-            } else if (sector == 0 && block == 0) {
-                //	System.out.println("le bloc correspond au bloc id");
-                //	Toast.makeText(context, "le bloc correspond au bloc id", Toast.LENGTH_SHORT).show();
-                mcReader.close();
-                return false;
-            } else {
-                // toutes les vérifications ont bien été faites. On peut écrire
-                // sur la puce
-                mcReader.close();
-                mcReader.connect();
-                result = mcReader.writeBlock(sector, block, Common.hexStringToByteArray(data), key, useAsKeyB);
-                mcReader.close();
+                throw new TagActionException("le bloc correspond à un bloc Système");
             }
+            // Si le bloc choisi corresponf au bloc id
+            if (sector == 0 && block == 0) {
+                mcReader.close();
+                throw new TagActionException("le bloc correspond au bloc id");
 
-            // Si le résulat est égale à 0 il n'ya pas eu d'erreur
-            if (result == 0) {
-                //	Toast.makeText(context, "Message transmis à la puce", Toast.LENGTH_SHORT).show();
-                mcReader.close();
-                return true;
-            } else if (result == 4) {
-                //	Toast.makeText(context, "Erreur d'authentification", Toast.LENGTH_SHORT).show();
-                mcReader.close();
-                return false;
             }
-        }
-
-        //Toast.makeText(context, "Pas de connection avec le TAG", Toast.LENGTH_SHORT).show();
-
-        return false;
-    }
-
-    private boolean writeInBlockTrailer(int sector, int block, String data, byte[] key, boolean useAsKeyB, Context context) {
-        int result = 0;
-        MCReader mcReader = Common.checkForTagAndCreateReader(context);
-        if (mcReader != null) {
-
-            // Si le secteur ne correspond pas à un secteur de la puce
-            if (sector < 0 && sector > mcReader.getSectorCount() - 1) {
-                //	System.out.println("le secteur doit etre compris entre 0 et mcReader.getSectorCount()-1 ");
-                //	Toast.makeText(context, "le secteur doit etre compris entre 0 et mcReader.getSectorCount()-1", Toast.LENGTH_SHORT).show();
-                mcReader.close();
-                return false;
-            }
-
-            // Si le bloc ne correspond pas à un bloc d'un secteur
-            if (block != 3 && block != 15) {
-                //	System.out.println("le bloc ne correspond pas à un SectorTrailer");
-                //	Toast.makeText(context, "le bloc doit etre compris entre 0 et mcReader.getBlockCount()-1", Toast.LENGTH_SHORT).show();
-                mcReader.close();
-                return false;
-            }
-
-            // Si la data ne fait pas 32 caractères avec que des caractères
-            // hexadécimaux
-            if (Common.isHexAnd16Byte(data, context) == false) {
-                //	Toast.makeText(context, "La data doit contenir que des caractères hexadécimaux et faire 32 caractères (16 bytes)", Toast.LENGTH_SHORT)
-                //			.show();
-                mcReader.close();
-                return false;
-            }
-
             // toutes les vérifications ont bien été faites. On peut écrire
             // sur la puce
             mcReader.close();
@@ -140,35 +71,80 @@ public class NFC_Mifare_classic implements INfc {
 
             // Si le résulat est égale à 0 il n'ya pas eu d'erreur
             if (result == 0) {
-                //	Toast.makeText(context, "Message transmis à la puce", Toast.LENGTH_SHORT).show();
+
                 mcReader.close();
                 return true;
             } else if (result == 4) {
-                //	Toast.makeText(context, "Erreur d'authentification", Toast.LENGTH_SHORT).show();
                 mcReader.close();
-                return false;
-            } else if (result == 3) {
-                //	Toast.makeText(context, "Erreur 3", Toast.LENGTH_SHORT).show();
-                mcReader.close();
-                return false;
-            } else if (result == 2) {
-                //	Toast.makeText(context, "Erreur 2", Toast.LENGTH_SHORT).show();
-                mcReader.close();
-                return false;
-            } else if (result == 1) {
-                //	Toast.makeText(context, "Erreur 1", Toast.LENGTH_SHORT).show();
-                mcReader.close();
-                return false;
+                throw new TagActionException("Impossible de s'authentifier à la puce avec cette clé");
+
             } else if (result == -1) {
-                //	Toast.makeText(context, "Erreur -1", Toast.LENGTH_SHORT).show();
+
                 mcReader.close();
-                return false;
+                throw new TagActionException("Erreur pendant l'écriture sur le TAG");
+            }
+
+        }
+        throw new TagActionException("Pas de connection avec le TAG");
+
+    }
+
+    /**
+     * Ecrire des données sur un blockTrailer de la puce. (16 bytes)
+     *
+     * @param sector : dans lequel on veut écrire
+     * @param block : dans lequel on souhaite écrire
+     * @param data : données que l'on souhaite écrire
+     * @param key : clé permettant l'authentification pour écrire
+     * @param useAsKeyB : true si on utilise la keyB false sinon
+     * @return true si les données on bien été transmise
+     * @throws TagActionException
+     */
+    private boolean writeInBlockTrailer(int sector, int block, String data, byte[] key, boolean useAsKeyB) throws TagActionException {
+        int result = 0;
+        MCReader mcReader = Common.checkForTagAndCreateReader(null);
+        if (mcReader != null) {
+
+            // Si le secteur ne correspond pas à un secteur de la puce
+            if (sector < 0 && sector > mcReader.getSectorCount() - 1) {
+                mcReader.close();
+                throw new TagActionException("le secteur doit etre compris entre 0 et mcReader.getSectorCount()-1");
+            }
+
+            // Si le bloc ne correspond pas à un bloc d'un secteur
+            if (block != 3 && block != 15) {
+                mcReader.close();
+                throw new TagActionException("le bloc ne correspond pas à un SectorTrailer");
+
+            }
+
+            // Si la data ne fait pas 32 caractères avec que des caractères hexadécimaux
+            if (Common.isHexAnd16Byte(data, null) == false) {
+                mcReader.close();
+                throw new TagActionException("La data doit contenir que des caractères hexadécimaux et faire 32 caractères");
+
+            }
+
+            // toutes les vérifications ont bien été faites. On peut écrire sur la puce
+            mcReader.close();
+            mcReader.connect();
+            result = mcReader.writeBlock(sector, block, Common.hexStringToByteArray(data), key, useAsKeyB);
+            mcReader.close();
+
+            // Si le résulat est égale à 0 il n'ya pas eu d'erreur
+            if (result == 0) {
+
+                return true;
+            } else if (result == 4) {
+
+                throw new TagActionException("Impossible de s'authentifier à la puce avec cette clé");
+            } else if (result == -1) {
+
+                throw new TagActionException("Erreur pendant l'écriture sur le TAG");
             }
         }
 
-        //Toast.makeText(context, "Pas de connection avec le TAG", Toast.LENGTH_SHORT).show();
-
-        return false;
+        throw new TagActionException("Pas de connection avec le TAG");
     }
 
     /**
@@ -179,38 +155,33 @@ public class NFC_Mifare_classic implements INfc {
      * @param data : information à écrire sur la puce (String d'hexadécimaux)
      * @param key : Clé permettant l'authentification au secteur
      * @param useAsKeyB : Si la clé utilisé est la clé A (false) ou la clé B (true)
-     * @param context
      * @return true si les données on bien été transmise
+     * @throws TagActionException
      */
-    public boolean writeInASector(int sector, String data, byte[] key, boolean useAsKeyB, Context context) {
+    public boolean writeInASector(int sector, String data, byte[] key, boolean useAsKeyB) throws TagActionException {
         int result = -1;
 
         // On récupère MCReader
-        MCReader mcReader = Common.checkForTagAndCreateReader(context);
+        MCReader mcReader = Common.checkForTagAndCreateReader(null);
 
         if (mcReader != null) {
             // Le secteur doit etre compris entre 0 et le nombre de secteur-1
             if (sector < 0 && sector > mcReader.getSectorCount() - 1) {
-                //	System.out.println("le secteur doit etre compris entre 0 et mcReader.getSectorCount()-1 ");
                 mcReader.close();
-                return false;
+                throw new TagActionException("le secteur doit etre compris entre 0 et mcReader.getSectorCount()-1");
             }
 
-            // Si le secteur 0 est sélectionné on peut écrire que 32 bytes (
-            // bloc 2
-            // et 3)
+            // Si le secteur 0 est sélectionné on peut écrire que 32 bytes (bloc 2 et 3)
             if (sector == 0) {
-                if (Common.isHexAnd32Byte(data, context) == false) {
+                if (Common.isHexAnd32Byte(data, null) == false) {
                     mcReader.close();
-                    //		System.out.println("SECTOR 0 :: 32 BYTES");
-                    return false;
+                    throw new TagActionException("La data doit contenir que des caractères hexadécimaux et faire 64 caractères (32 bytes)");
                 }
 
-            } else if (Common.isHexAnd48Byte(data, context) == false) {
+            } else if (Common.isHexAnd48Byte(data, null) == false) {
                 // autres secteurs, 48 bytes
-                //	System.out.println("SECTOR 0 :: 48 BYTES");
                 mcReader.close();
-                return false;
+                throw new TagActionException("La data doit contenir que des caractères hexadécimaux et faire 96 caractères (48 bytes)");
             }
 
             int i = 0;
@@ -220,11 +191,20 @@ public class NFC_Mifare_classic implements INfc {
                     mcReader.close();
                     mcReader.connect();
                     String string = (data.subSequence(i, i + 32).toString());
-                    //	System.out.println(string);
+
                     result = mcReader.writeBlock(sector, j, Common.hexStringToByteArray(string), key, useAsKeyB);
                     mcReader.close();
                     if (result != 0) {
-                        return false;
+                        if (result == -1) {
+
+                            throw new TagActionException("Erreur pendant l'écriture sur le TAG");
+                        } else if (result == 4) {
+
+                            throw new TagActionException("Impossible de s'authentifier au secteur " + sector + " avec cette clé");
+                        } else {
+
+                            throw new TagActionException("Erreur");
+                        }
                     }
                     i = i + 32;
                 }
@@ -235,25 +215,29 @@ public class NFC_Mifare_classic implements INfc {
                     mcReader.close();
                     mcReader.connect();
                     String string = (data.subSequence(i, i + 32).toString());
-                    //	System.out.println(string);
                     result = mcReader.writeBlock(sector, j, Common.hexStringToByteArray(string), key, useAsKeyB);
                     mcReader.close();
                     if (result != 0) {
-                        return false;
+                        if (result == -1) {
+
+                            throw new TagActionException("Erreur pendant l'écriture sur le TAG");
+                        } else if (result == 4) {
+
+                            throw new TagActionException("Impossible de s'authentifier au secteur " + sector + " avec cette clé");
+                        } else {
+
+                            throw new TagActionException("Erreur");
+                        }
                     }
                     i = i + 32;
                 }
             }
 
             if (result == 0) {
-                //	System.out.println("TRUE");
-                //Toast.makeText(context, "Transmission Effectué", Toast.LENGTH_SHORT).show();
                 return true;
             }
         }
-        // System.out.println("FALSE");
-        //Toast.makeText(context, "Pas de connection", Toast.LENGTH_SHORT).show();
-        return false;
+        throw new TagActionException("Pas de connection avec le TAG");
 
     }
 
@@ -263,13 +247,12 @@ public class NFC_Mifare_classic implements INfc {
      * @param data : Données à transmettre (String d'hexadécimaux)
      * @param key : clé permettant l'authentification pour écrire
      * @param useAsKeyB : true si on utilise la keyB false sinon
-     * @param context
      * @return true si les données on bien été transmise
      */
-    public boolean writeInAllDataSpace(String data, byte[] key, boolean useAsKeyB, Context context) {
+    public boolean writeInAllDataSpace(String data, byte[] key, boolean useAsKeyB) throws TagActionException {
         int result = 0;
 
-        MCReader mcReader = Common.checkForTagAndCreateReader(context);
+        MCReader mcReader = Common.checkForTagAndCreateReader(null);
 
         // mcReader.getSize();
         if (mcReader != null) {
@@ -278,7 +261,7 @@ public class NFC_Mifare_classic implements INfc {
             while (data.length() > (16 * count)) {
                 count++;
             }
-            //System.out.println("nombre de block : " + count);
+            // System.out.println("nombre de block : " + count);
 
             if (data.length() < 1504) {
                 while (data.length() != 1504) {
@@ -286,10 +269,9 @@ public class NFC_Mifare_classic implements INfc {
                 }
             }
 
-            if (!(Common.isHexAnd752Byte(data, context))) {
+            if (!(Common.isHexAnd752Byte(data, null))) {
                 mcReader.close();
-                //Toast.makeText(context, "Données éronnées", Toast.LENGTH_SHORT).show();
-                return false;
+                throw new TagActionException("La data doit contenir que des caractères hexadécimaux et faire 752 caractères");
 
             }
             int k = 0;
@@ -302,12 +284,20 @@ public class NFC_Mifare_classic implements INfc {
                         mcReader.close();
                         mcReader.connect();
                         String string = (data.subSequence(k, k + 32).toString());
-                        //	System.out.println("s : " + j + "b : " + i + " data : " + string);
+
                         result = mcReader.writeBlock(j, i, Common.hexStringToByteArray(string), key, useAsKeyB);
                         mcReader.close();
                         if (result != 0) {
-                            //Toast.makeText(context, "Error Sector : " + j + " Block : " + i, Toast.LENGTH_SHORT).show();
-                            return false;
+                            if (result == -1) {
+
+                                throw new TagActionException("Erreur pendant l'écriture sur le TAG");
+                            } else if (result == 4) {
+
+                                throw new TagActionException("Impossible de s'authentifier au secteur " + j + " avec cette clé");
+                            } else {
+
+                                throw new TagActionException("Erreur");
+                            }
                         }
                         k = k + 32;
                     }
@@ -318,12 +308,20 @@ public class NFC_Mifare_classic implements INfc {
                         mcReader.close();
                         mcReader.connect();
                         String string = (data.subSequence(k, k + 32).toString());
-                        //	System.out.println("s : " + j + "b : " + i + " data : " + string);
+
                         result = mcReader.writeBlock(j, i, Common.hexStringToByteArray(string), key, useAsKeyB);
                         mcReader.close();
                         if (result != 0) {
-                            //	Toast.makeText(context, "Error Sector : " + j + " Block : " + i, Toast.LENGTH_SHORT).show();
-                            return false;
+                            if (result == -1) {
+
+                                throw new TagActionException("Erreur pendant l'écriture sur le TAG");
+                            } else if (result == 4) {
+
+                                throw new TagActionException("Impossible de s'authentifier au secteur " + j + " avec cette clé");
+                            } else {
+
+                                throw new TagActionException("Erreur");
+                            }
                         }
                         k = k + 32;
                     }
@@ -331,13 +329,10 @@ public class NFC_Mifare_classic implements INfc {
             }
 
             if (result == 0) {
-                //	System.out.println("TRUE");
-                //Toast.makeText(context, "Données transmises  ", Toast.LENGTH_SHORT).show();
                 return true;
             }
         }
-        //Toast.makeText(context, "Pas de connection", Toast.LENGTH_SHORT).show();
-        return false;
+        throw new TagActionException("Pas de connection avec le TAG");
 
     }
 
@@ -347,22 +342,19 @@ public class NFC_Mifare_classic implements INfc {
      * @param data : Données à transmettre (String d'hexadécimaux)
      * @param key : clé permettant l'authentification pour écrire
      * @param useAsKeyB : true si on utilise la keyB false sinon
-     * @param context
      * @return true si les données on bien été transmise
      */
-    public boolean writeInAllDataSpaceWithAllKey(String data, byte[][] key, boolean useAsKeyB, Context context) {
+    public boolean writeInAllDataSpaceWithAllKey(String data, byte[][] key, boolean useAsKeyB) throws TagActionException {
         int result = 0;
 
-        MCReader mcReader = Common.checkForTagAndCreateReader(context);
+        MCReader mcReader = Common.checkForTagAndCreateReader(null);
 
-        // mcReader.getSize();
         if (mcReader != null) {
 
             int count = 1;
             while (data.length() > (16 * count)) {
                 count++;
             }
-            //	System.out.println("nombre de block : " + count);
 
             if (data.length() < 1504) {
                 while (data.length() != 1504) {
@@ -370,10 +362,9 @@ public class NFC_Mifare_classic implements INfc {
                 }
             }
 
-            if (!(Common.isHexAnd752Byte(data, context))) {
+            if (!(Common.isHexAnd752Byte(data, null))) {
                 mcReader.close();
-                //Toast.makeText(context, "Données éronnées", Toast.LENGTH_SHORT).show();
-                return false;
+                throw new TagActionException("La data doit contenir que des caractères hexadécimaux et faire 752 caractères");
 
             }
             int k = 0;
@@ -386,12 +377,20 @@ public class NFC_Mifare_classic implements INfc {
                         mcReader.close();
                         mcReader.connect();
                         String string = (data.subSequence(k, k + 32).toString());
-                        //	System.out.println("s : " + j + "b : " + i + " data : " + string);
+
                         result = mcReader.writeBlock(j, i, Common.hexStringToByteArray(string), key[j], useAsKeyB);
                         mcReader.close();
                         if (result != 0) {
-                            //	Toast.makeText(context, "Error Sector : " + j + " Block : " + i, Toast.LENGTH_SHORT).show();
-                            return false;
+                            if (result == -1) {
+
+                                throw new TagActionException("Erreur pendant l'écriture sur le TAG");
+                            } else if (result == 4) {
+
+                                throw new TagActionException("Impossible de s'authentifier au secteur " + j + " avec cette clé");
+                            } else {
+
+                                throw new TagActionException("Erreur");
+                            }
                         }
                         k = k + 32;
                     }
@@ -402,12 +401,20 @@ public class NFC_Mifare_classic implements INfc {
                         mcReader.close();
                         mcReader.connect();
                         String string = (data.subSequence(k, k + 32).toString());
-                        //	System.out.println("s : " + j + "b : " + i + " data : " + string);
+
                         result = mcReader.writeBlock(j, i, Common.hexStringToByteArray(string), key[j], useAsKeyB);
                         mcReader.close();
                         if (result != 0) {
-                            //	Toast.makeText(context, "Error Sector : " + j + " Block : " + i, Toast.LENGTH_SHORT).show();
-                            return false;
+                            if (result == -1) {
+
+                                throw new TagActionException("Erreur pendant l'écriture sur le TAG");
+                            } else if (result == 4) {
+
+                                throw new TagActionException("Impossible de s'authentifier au secteur " + j + " avec cette clé");
+                            } else {
+
+                                throw new TagActionException("Erreur");
+                            }
                         }
                         k = k + 32;
                     }
@@ -415,13 +422,11 @@ public class NFC_Mifare_classic implements INfc {
             }
 
             if (result == 0) {
-                //	System.out.println("TRUE");
-                //	Toast.makeText(context, "Données transmises  ", Toast.LENGTH_SHORT).show();
+
                 return true;
             }
         }
-        //Toast.makeText(context, "Pas de connection", Toast.LENGTH_SHORT).show();
-        return false;
+        throw new TagActionException("Pas de connection avec le TAG");
 
     }
 
@@ -433,44 +438,42 @@ public class NFC_Mifare_classic implements INfc {
      * @param keyB : Key B actuelle
      * @param newAccessBit : Nouveau AccesBits du SectorTrailer
      * @return true si l'écriture c'est bien passé
-     * @throws ActionNotAllowed : Action non permise
+     * @throws TagActionException : Action non permise
      */
-    public boolean writeAccesBit(int sector, byte[] keyA, byte[] keyB, byte[] newAccessBit, Context context) throws ActionNotAllowed {
+    public boolean writeAccesBit(int sector, byte[] keyA, byte[] keyB, byte[] newAccessBit) throws TagActionException {
+        if (isAuthorizationToWriteInSectorTrailer()) {
+            this.setAuthorizationToWriteInSectorTrailer(false);
+            // récupération du Secteur Trailer du secteur voulu
+            String result = this.readABlock(sector, 3, keyA, false);
 
-        // récupération du Secteur Trailer du secteur voulu
-        String result = this.readABlock(sector, 3, keyA, false, context);
+            if (result != null) {
+                // Récupération des paramètres pour le secteur
+                byte[] ac = Common.hexStringToByteArray(result.subSequence(12, 20).toString());
+                byte[][] AC = Common.acToACMatrix(ac);
 
-        if (result != null) {
-            // Récupération des paramètres pour le secteur
-            byte[] ac = Common.hexStringToByteArray(result.subSequence(12, 20).toString());
-            byte[][] AC = Common.acToACMatrix(ac);
+                // Lecture des permissions sur le sector Trailer
+                int permission = this.ReadAccesBits(AC[0][3], AC[1][3], AC[2][3], true);
 
-            // Lecture des permissions sur le sector Trailer
-            int permission = this.ReadAccesBits(AC[0][3], AC[1][3], AC[2][3], true);
+                // Vérification des permissions afin de connaitre si on peut effectuer cette action
+                if (!(permission == 13 || permission == 14 || permission == 15)) {
+                    throw new TagActionException("We can't write AccesBits with this parameters");
+                }
+                if (permission == 13) {
+                    String bloc = Common.byte2HexString(keyA) + Common.byte2HexString(newAccessBit) + result.substring(20, 32);
 
-            // Vérification des permissions afin de connaitre si on peut effectuer cette action
-            if (!(permission == 13 || permission == 14 || permission == 15)) {
-                throw new ActionNotAllowed("We can't write AccesBits with this parameters");
+                    // Write with KEY A
+                    return this.writeInBlockTrailer(sector, 3, bloc, keyA, false);
+                } else if (permission == 14 || permission == 15) {
+                    // Write with KEY B
+                    String bloc = Common.byte2HexString(keyA) + Common.byte2HexString(newAccessBit) + Common.byte2HexString(keyB);
+
+                    return this.writeInBlockTrailer(sector, 3, bloc, keyB, true);
+                }
             }
-            if (permission == 13) {
-                String bloc = Common.byte2HexString(keyA) + Common.byte2HexString(newAccessBit) + result.substring(20, 32);
-                //	System.out.println("nouveau sector Trailer ::: " + bloc);
-                // : Write with KEY A
-                return this.writeInBlockTrailer(sector, 3, bloc, keyA, false, context);
-            } else if (permission == 14 || permission == 15) {
-                // : Write with KEY B
-                String bloc = Common.byte2HexString(keyA) + Common.byte2HexString(newAccessBit) + Common.byte2HexString(keyB);
-                //	System.out.println("nouveau sector Trailer ::: " + bloc);
-                return this.writeInBlockTrailer(sector, 3, bloc, keyB, true, context);
-            }
-
+            throw new TagActionException("Pas de connection avec le TAG");
         }
-        //Toast.makeText(context, "Pas de connection", Toast.LENGTH_SHORT).show();
-        return false;
+        throw new TagActionException("Vous n'avez pas l'aurotisation d'écrire dans le SectorTrailer");
     }
-
-
-
 
     /**
      * Ecriture de la clé A en utilisant la clé A et la clé B
@@ -480,12 +483,12 @@ public class NFC_Mifare_classic implements INfc {
      * @param keyB : Clé B actuelle
      * @param newKeyA : nouvelle Clé A
      * @return true si les données on bien été transmise
-     * @throws ActionNotAllowed
+     * @throws TagActionException
      */
-    public boolean writeKeyA(int sector, byte[] keyA, byte[] keyB, byte[] newKeyA, Context context) throws ActionNotAllowed {
+    public boolean writeKeyA(int sector, byte[] keyA, byte[] keyB, byte[] newKeyA) throws TagActionException {
 
         // récupération du Secteur Trailer du secteur voulu
-        String result = this.readABlock(sector, 3, keyA, false, context);
+        String result = this.readABlock(sector, 3, keyA, false);
 
         if (result != null) {
             // Récupération des paramètres pour le secteur
@@ -497,27 +500,22 @@ public class NFC_Mifare_classic implements INfc {
 
             // Vérification des permissions afin de connaitre si on peut effectuer cette action
             if (!(permission == 9 || permission == 11 || permission == 13 || permission == 14)) {
-                throw new ActionNotAllowed("We can't write KEYA with this parameters");
+                throw new TagActionException("We can't write KEYA with this parameters");
             }
 
             // Si Permission = 9 ou 13 alors on peut écrire la nouvelle clé B
             if (permission == 9 || permission == 13) {
                 String bloc = Common.byte2HexString(newKeyA) + result.subSequence(12, 32);
-                //	System.out.println("Nouveau Bloc ::: " + bloc);
-                //	System.out.println("Ancien  Bloc ::: " + result);
                 // : key A
-                return this.writeInBlockTrailer(sector, 3, bloc, keyA, false, context);
+                return this.writeInBlockTrailer(sector, 3, bloc, keyA, false);
             } else if (permission == 11 || permission == 14) {
                 String bloc = Common.byte2HexString(newKeyA) + result.subSequence(12, 20) + Common.byte2HexString(keyB);
-                //	System.out.println("Nouveau Bloc 2 ::: " + bloc);
-                //	System.out.println("Ancien  Bloc 2 ::: " + result);
                 // : key b
-                return this.writeInBlockTrailer(sector, 3, bloc, keyB, true, context);
+                return this.writeInBlockTrailer(sector, 3, bloc, keyB, true);
             }
         }
-        return false;
+        throw new TagActionException("Pas de connection avec le TAG");
     }
-
 
     /**
      * Ecriture de la clé B en utilisant la clé A et la clé B
@@ -527,11 +525,11 @@ public class NFC_Mifare_classic implements INfc {
      * @param keyB : Clé B actuelle
      * @param newKeyB : nouvelle CléB
      * @return true si les données on bien été transmise
-     * @throws ActionNotAllowed
+     * @throws TagActionException
      */
-    public boolean writeKeyB(int sector, byte[] keyA, byte[] keyB, byte[] newKeyB, Context context) throws ActionNotAllowed {
+    public boolean writeKeyB(int sector, byte[] keyA, byte[] keyB, byte[] newKeyB) throws TagActionException {
 
-        String result = this.readABlock(sector, 3, keyA, false, context);
+        String result = this.readABlock(sector, 3, keyA, false);
 
         if (result != null) {
 
@@ -541,27 +539,25 @@ public class NFC_Mifare_classic implements INfc {
             int permission = this.ReadAccesBits(AC[0][3], AC[1][3], AC[2][3], true);
 
             if (!(permission == 9 || permission == 11 || permission == 13 || permission == 14)) {
-                throw new ActionNotAllowed("We can't write KEYA with this parameters");
+                throw new TagActionException("We can't write KEYA with this parameters");
             }
 
             if (permission == 9 || permission == 13) {
                 String bloc = Common.byte2HexString(keyA) + result.subSequence(12, 20) + Common.byte2HexString(newKeyB);
-                //	System.out.println(permission + "Nouveau Bloc ::: " + bloc);
-                //	System.out.println("Ancien  Bloc ::: " + result);
+
                 // ecrire avec clé A
-                this.writeInBlockTrailer(sector, 3, bloc, keyA, false, context);
-                return true;
+                return this.writeInBlockTrailer(sector, 3, bloc, keyA, false);
+
             } else if (permission == 11 || permission == 14) {
                 String bloc = Common.byte2HexString(keyA) + result.subSequence(12, 20) + Common.byte2HexString(newKeyB);
-                //	System.out.println(permission + "Nouveau Bloc ::: " + bloc);
-                //	System.out.println("Ancien  Bloc ::: " + result);
+
                 // ecrire avec clé B
-                this.writeInBlockTrailer(sector, 3, bloc, keyB, true, context);
-                return true;
+                return this.writeInBlockTrailer(sector, 3, bloc, keyB, true);
+
             }
 
         }
-        return false;
+        throw new TagActionException("Pas de connection avec le TAG");
     }
 
     // ////////////////////////////////////////////////////////////
@@ -590,35 +586,40 @@ public class NFC_Mifare_classic implements INfc {
      * @param block : numéro du bloc à lire
      * @param sector : Numéro du secteur
      * @param key : Clé pour lire les données
-     * @param useAsKeyB : Si la clé est la clé B (true) ou la clé A (false)
-     * @param context : Context pour retour informations sur l'appli
+     * @param useAsKeyB : Si la clé est la clé B (true) ou la clé A (false) : Context pour retour informations sur l'appli
      * @return valeur du bloc en String
      */
-    public String readABlock(int sector, int block, byte[] key, boolean useAsKeyB, Context context) {
+    public String readABlock(int sector, int block, byte[] key, boolean useAsKeyB) throws TagActionException {
 
-        MCReader mcReader = Common.checkForTagAndCreateReader(context);
+        MCReader mcReader = Common.checkForTagAndCreateReader(null);
 
         String[] string2 = null;
         // * Lecture du bloc
         if (mcReader != null) {
-            if (sector<0 || sector>mcReader.getBlockCount()-1){
+            if (sector < 0 || sector > mcReader.getSectorCount() - 1) {
                 mcReader.close();
-                return null;
+                throw new TagActionException("le secteur doit etre compris entre 0 et mcReader.getSectorCount()-1");
             }
+            if (block < 0 || block > mcReader.getBlockCountInSector(sector) - 1) {
+                mcReader.close();
+                throw new TagActionException("le bloc doit etre compris entre 0 et mcReader.getBlockCountInSector(sector)-1");
+            }
+
             try {
                 string2 = mcReader.readSector(sector, key, useAsKeyB);
 
             } catch (TagLostException e) {
                 e.printStackTrace();
+                throw new TagActionException(e.getMessage());
             }
             if (string2 != null && block >= 0 && block < mcReader.getBlockCountInSector(sector)) {
                 mcReader.close();
                 return string2[block];
             }
             mcReader.close();
+            throw new TagActionException("Erreur Authentification secteur " + sector);
         }
-        // Toast.makeText(context, "Pas de connection avec le TAG", Toast.LENGTH_SHORT).show();
-        return null;
+        throw new TagActionException("Pas de connection avec le TAG");
     }
 
     /**
@@ -627,19 +628,18 @@ public class NFC_Mifare_classic implements INfc {
      * @param sector : Numéro du secteur que l'on souhaite lire
      * @param key : clé permettant l'authentification pour écrire
      * @param useAsKeyB : true si on utilise la keyB false sinon
-     * @param context
      * @return data (String de hexadécimale)
      */
-    public String readASector(int sector, byte[] key, boolean useAsKeyB, Context context) {
+    public String readASector(int sector, byte[] key, boolean useAsKeyB) throws TagActionException {
 
         // se connecter à la puce NFC
-        MCReader mcReader = Common.checkForTagAndCreateReader(context);
+        MCReader mcReader = Common.checkForTagAndCreateReader(null);
 
         if (mcReader != null) {
             // * Lecture bloc par bloc de la puce NFC avec clé par défaut
-            if (sector<0 || sector>mcReader.getBlockCount()-1){
+            if (sector < 0 || sector > mcReader.getSectorCount() - 1) {
                 mcReader.close();
-                return null;
+                throw new TagActionException("le secteur doit etre compris entre 0 et mcReader.getSectorCount()-1");
             }
             String[] dataPuce = null;
 
@@ -647,25 +647,26 @@ public class NFC_Mifare_classic implements INfc {
                 dataPuce = mcReader.readSector(sector, key, useAsKeyB);
             } catch (TagLostException e) {
                 e.printStackTrace();
+                throw new TagActionException(e.getMessage());
             }
 
             String data = "";
             if (dataPuce != null) {
 
                 for (int j = 0; j < mcReader.getBlockCountInSector(sector); j++) {
-                    //	System.out.println(j);
+                    // System.out.println(j);
                     data += dataPuce[j]; // + " \0A"
                 }
 
                 mcReader.close();
 
-                //	System.out.println(data);
+                // System.out.println(data);
                 return data;
             }
             mcReader.close();
+            throw new TagActionException("Erreur Authentification secteur " + sector);
         }
-        //	Toast.makeText(context, "Pas de connection", Toast.LENGTH_SHORT).show();
-        return null;
+        throw new TagActionException("Pas de connection avec le TAG");
     }
 
     /**
@@ -673,12 +674,11 @@ public class NFC_Mifare_classic implements INfc {
      *
      * @param key
      * @param useAsKeyB
-     * @param context
      * @return
      */
-    public String readAllSpace(byte[] key, boolean useAsKeyB, Context context) {
+    public String readAllSpace(byte[] key, boolean useAsKeyB) throws TagActionException {
         // se connecter à la puce NFC
-        MCReader mcReader = Common.checkForTagAndCreateReader(context);
+        MCReader mcReader = Common.checkForTagAndCreateReader(null);
 
         // * Lecture bloc par bloc de la puce NFC avec clé par défaut
 
@@ -688,11 +688,15 @@ public class NFC_Mifare_classic implements INfc {
         if (mcReader != null) {
 
             for (int i = 0; i < mcReader.getSectorCount(); i++) {
+
                 try {
-                    string2 = mcReader.readSector(i, key, false);
+                    string2 = mcReader.readSector(i, key, useAsKeyB);
                 } catch (TagLostException e) {
                     e.printStackTrace();
+                    throw new TagActionException(e.getMessage());
+
                 }
+
                 if (string2 != null) {
                     string[i][0] = string2[0];
                     string[i][1] = string2[1];
@@ -700,7 +704,7 @@ public class NFC_Mifare_classic implements INfc {
                     string[i][3] = string2[3];
                 } else {
                     mcReader.close();
-                    return null;// "Erreur Authentification secteur :" + i;
+                    throw new TagActionException("Erreur Authentification secteur " + i);
                 }
             }
 
@@ -709,19 +713,15 @@ public class NFC_Mifare_classic implements INfc {
             for (int i = 0; i < mcReader.getSectorCount(); i++) {
 
                 for (int j = 0; j < mcReader.getBlockCountInSector(i); j++) {
-                    data += string[i][j];// + "0A";
+                    data += string[i][j];
                 }
-                // data += "0A";
 
             }
 
             mcReader.close();
-
-            //	System.out.println(data);
             return data;
         }
-        //Toast.makeText(context, "Pas de connection", Toast.LENGTH_SHORT).show();
-        return null;
+        throw new TagActionException("Pas de connection avec le TAG ");
 
     }
 
@@ -803,11 +803,12 @@ public class NFC_Mifare_classic implements INfc {
      *         </ul>
      *
      *         <li>-1 : error</li> </ul>
+     * @throws TagActionException
      */
-    public int getInfoForBlock(int sector, int block, byte[] key, boolean useAsKeyB) {
+    public int getInfoForBlock(int sector, int block, byte[] key, boolean useAsKeyB) throws TagActionException {
 
         // Lecture du sector Trailer du Secteur demandé
-        String result = this.readABlock(sector, 3, key, useAsKeyB, null);
+        String result = this.readABlock(sector, 3, key, useAsKeyB);
 
         if (result != null) {
             // Récupération des paramètres pour le secteur
@@ -990,7 +991,7 @@ public class NFC_Mifare_classic implements INfc {
                 + binaryToHexa(block3[0] + block2[0] + block1[0] + block0[0])
                 + binaryToHexa(not(block3[2]) + not(block2[2]) + not(block1[2]) + not(block0[2]))
                 + binaryToHexa(block3[2] + block2[2] + block1[2] + block0[2]) + binaryToHexa(block3[1] + block2[1] + block1[1] + block0[1]) + "69";
-        //TODO : dernier byte Access Bit ???
+        // TODO : dernier byte Access Bit ???
 
         return Common.hexStringToByteArray(accessBit);
 
@@ -1146,10 +1147,9 @@ public class NFC_Mifare_classic implements INfc {
         }
     }
 
-
     /**
-     * For Activities which want to treat new Intents as Intents with a new Tag attached. If the given Intent has a Tag extra, the Tag and
-     * UID will be updated. This method will also check if the device/tag supports Mifare Classic (see return values).
+     * For Activities which want to treat new Intents as Intents with a new Tag attached. If the given Intent has a Tag extra, the Tag and UID will be
+     * updated. This method will also check if the device/tag supports Mifare Classic (see return values).
      *
      * @param intent The Intent which should be checked for a new Tag.
      * @return <ul>
@@ -1158,7 +1158,7 @@ public class NFC_Mifare_classic implements INfc {
      *         <li>-1 - Wrong Intent (action is not "ACTION_TECH_DISCOVERED").</li>
      *         </ul>
      */
-    public int treatAsNewTag(Intent intent){
+    public int treatAsNewTag(Intent intent) {
         return Common.treatAsNewTag(intent, null);
 
     }
@@ -1169,12 +1169,13 @@ public class NFC_Mifare_classic implements INfc {
      * @param hexString The hex string to convert
      * @return An array of bytes with the values of the string.
      */
-    public byte[] hexStringToByteArray(String hexString){
+    public byte[] hexStringToByteArray(String hexString) {
         return Common.hexStringToByteArray(hexString);
     }
 
     /**
      * Obtenir info sur AccessBits
+     *
      * @param i : index of acces bit
      * @return correspondance
      */
@@ -1213,9 +1214,17 @@ public class NFC_Mifare_classic implements INfc {
             case 16:
                 return "Read Acces Bits with KEY A or B";
             default:
-                return "";
+                return "Erreur index";
         }
 
+    }
+
+    public boolean isAuthorizationToWriteInSectorTrailer() {
+        return AUTHORIZATION_TO_WRITE_IN_SECTOR_TRAILER;
+    }
+
+    public void setAuthorizationToWriteInSectorTrailer(boolean authorization) {
+        AUTHORIZATION_TO_WRITE_IN_SECTOR_TRAILER = authorization;
     }
 
 }
