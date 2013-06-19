@@ -1,6 +1,6 @@
 package org.kevoree.android.nfc.api;
 
-import android.content.Context;
+
 import android.content.Intent;
 
 public interface INfc {
@@ -18,10 +18,9 @@ public interface INfc {
      * @param data : données que l'on souhaite écrire
      * @param key : clé permettant l'authentification pour écrire
      * @param useAsKeyB : true si on utilise la keyB false sinon
-     * @param context
      * @return true si les données on bien été transmise
      */
-    public boolean writeInABlock(int sector, int block, String data, byte[] key, boolean useAsKeyB, Context context);
+    public boolean writeInABlock(int sector, int block, String data, byte[] key, boolean useAsKeyB) throws TagActionException;
 
     /**
      * Ecrire dans un secteur de la puce NFC MifareClassic On peut écrire 32 bytes dans le secteur 1 (blocs 1 et 2) et 48 bytes dans les autres
@@ -31,10 +30,9 @@ public interface INfc {
      * @param data : information à écrire sur la puce
      * @param key : Clé permettant l'authentification au secteur
      * @param useAsKeyB : Si la clé utilisé est la clé A (false) ou la clé B (true)
-     * @param context
      * @return true si les données on bien été transmise
      */
-    public boolean writeInASector(int sector, String data, byte[] key, boolean useAsKeyB, Context context);
+    public boolean writeInASector(int sector, String data, byte[] key, boolean useAsKeyB)throws TagActionException;
 
     /**
      * Ecire dans tout l'espace de la puce NFC (752bytes pour la MifareClassic 1K) Pour cette fonction il faut que tout les secteurs ont la même Key
@@ -42,10 +40,9 @@ public interface INfc {
      * @param data : Données à transmettre
      * @param key : clé permettant l'authentification pour écrire
      * @param useAsKeyB : true si on utilise la keyB false sinon
-     * @param context
      * @return true si les données on bien été transmise
      */
-    public boolean writeInAllDataSpace(String data, byte[] key, boolean useAsKeyB, Context context);
+    public boolean writeInAllDataSpace(String data, byte[] key, boolean useAsKeyB)throws TagActionException;
 
     /**
      * Ecriture de la clé A en utilisant la clé A et la clé B
@@ -55,9 +52,9 @@ public interface INfc {
      * @param keyB : Clé B actuelle
      * @param newKeyA : nouvelle Clé A
      * @return true si les données on bien été transmise
-     * @throws ActionNotAllowed
+     * @throws TagActionException
      */
-    public boolean writeKeyA(int sector,  byte[] keyA, byte[] keyB, byte[] newKeyA, Context context) throws ActionNotAllowed;
+    public boolean writeKeyA(int sector,  byte[] keyA, byte[] keyB, byte[] newKeyA) throws TagActionException;
 
     /**
      * Ecriture de la clé B en utilisant la clé A et la clé B
@@ -67,9 +64,9 @@ public interface INfc {
      * @param keyB : Clé B actuelle
      * @param newKeyB : nouvelle CléB
      * @return true si les données on bien été transmise
-     * @throws ActionNotAllowed
+     * @throws TagActionException
      */
-    public boolean writeKeyB(int sector, byte[] keyA, byte[] keyB, byte[] newKeyB, Context context) throws ActionNotAllowed;
+    public boolean writeKeyB(int sector, byte[] keyA, byte[] keyB, byte[] newKeyB) throws TagActionException;
 
     /**
      * Ecriture des AccesBits du Sector Trailer
@@ -79,9 +76,10 @@ public interface INfc {
      * @param keyB : Key B actuelle
      * @param newAccessBit : Nouveau AccesBits du SectorTrailer
      * @return true si l'écriture c'est bien passé
-     * @throws ActionNotAllowed : Action non permise
+     * @throws TagActionException : Action non permise
      */
-    public boolean writeAccesBit(int sector, byte[] keyA, byte[] keyB, byte[] newAccessBit, Context context) throws ActionNotAllowed;
+    public boolean writeAccesBit(int sector, byte[] keyA, byte[] keyB, byte[] newAccessBit) throws TagActionException;
+
 
     // ///////////////////////////////////////////////////////////////
 
@@ -125,10 +123,9 @@ public interface INfc {
      * @param sector : Numéro du secteur
      * @param key : Clé pour lire les données
      * @param useAsKeyB : Si la clé est la clé B (true) ou la clé A (false)
-     * @param context : Context pour retour informations sur l'appli
      * @return valeur du bloc en String
      */
-    public String readABlock(int sector, int block, byte[] key, boolean useAsKeyB, Context context);
+    public String readABlock(int sector, int block, byte[] key, boolean useAsKeyB)throws TagActionException;
 
     /**
      * Lecture d'un secteur
@@ -136,20 +133,18 @@ public interface INfc {
      * @param sector : Numéro du secteur que l'on souhaite lire
      * @param key : clé permettant l'authentification pour écrire
      * @param useAsKeyB : true si on utilise la keyB false sinon
-     * @param context
      * @return data (String de hexadécimale)
      */
-    public String readASector(int sector, byte[] key, boolean useAsKeyB, Context context);
+    public String readASector(int sector, byte[] key, boolean useAsKeyB)throws TagActionException;
 
     /**
      * Lecture de toute la puce (Il faut que la clé soit la m^me pour tout les secteurs)
      *
      * @param key : clé permettant l'authentification pour écrire
      * @param useAsKeyB : true si on utilise la keyB false sinon
-     * @param context
      * @return data (String de hexadécimale)
      */
-    public String readAllSpace(byte[] key, boolean useAsKeyB, Context context);
+    public String readAllSpace(byte[] key, boolean useAsKeyB)throws TagActionException;
 
     /**
      * Obtenir les informations d'un bloc de la puce NFC
@@ -160,7 +155,7 @@ public interface INfc {
      * @param useAsKeyB : True si on tuilise la KeyB false sinon
      * @return
      */
-    public int getInfoForBlock(int sector, int block, byte[] key, boolean useAsKeyB);
+    public int getInfoForBlock(int sector, int block, byte[] key, boolean useAsKeyB)throws TagActionException;
 
     /**
      * Obtenir les informations avec les 3 Bits d'Acces
