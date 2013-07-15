@@ -1,4 +1,4 @@
-package org.kevoree.android.nfc.api;
+package org.kevoree.android.nfc.impl;
 
 public class TagActionException extends Exception{
 

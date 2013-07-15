@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.kevoree.android.nfc.api;
+package org.kevoree.android.nfc.impl;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -39,7 +39,6 @@ import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.util.SparseArray;
-import android.widget.Toast;
 
 /**
  * Common functions and variables for all Activities.

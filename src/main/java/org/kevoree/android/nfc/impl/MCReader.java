@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.kevoree.android.nfc.api;
+package org.kevoree.android.nfc.impl;
 
 import java.io.File;
 import java.io.IOException;

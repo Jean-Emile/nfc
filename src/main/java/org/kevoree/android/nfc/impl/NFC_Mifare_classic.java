@@ -1,10 +1,11 @@
-package org.kevoree.android.nfc.api;
+package org.kevoree.android.nfc.impl;
 
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 
 import android.content.Intent;
 import android.nfc.TagLostException;
+import org.kevoree.android.nfc.api.INfc;
 
 public class NFC_Mifare_classic implements INfc {
 

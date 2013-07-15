@@ -2,6 +2,7 @@ package org.kevoree.android.nfc.api;
 
 
 import android.content.Intent;
+import org.kevoree.android.nfc.impl.TagActionException;
 
 public interface INfc {
 
