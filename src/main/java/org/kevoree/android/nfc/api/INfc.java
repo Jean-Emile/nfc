@@ -6,165 +6,187 @@ import org.kevoree.android.nfc.impl.TagActionException;
 
 public interface INfc {
 
-    // ///////////////////////////////////////////////////////////////
-
-    // Fonctions écritures sur la puce NFC
-
-    // ///////////////////////////////////////////////////////////////
     /**
-     * Ecrire des données sur un block d'un secteur de la puce. (16 bytes)
+     * Write data to a block of a sector of the chip (16 bytes)
      *
-     * @param sector : dans lequel on veut écrire
-     * @param block : dans lequel on souhaite écrire
-     * @param data : données que l'on souhaite écrire
-     * @param key : clé permettant l'authentification pour écrire
-     * @param useAsKeyB : true si on utilise la keyB false sinon
-     * @return true si les données on bien été transmise
+     * @param sector : Sector that we want to write
+     * @param block : Block that we want to write
+     * @param data : Data that we want to write in a block (hexadecimal 16bytes)
+     * @param key : Key for the authentication
+     * @param useAsKeyB : true if we use Key B to write
+     * @return true if data has been sent
+     * @throws TagActionException
      */
     public boolean writeInABlock(int sector, int block, String data, byte[] key, boolean useAsKeyB) throws TagActionException;
 
     /**
-     * Ecrire dans un secteur de la puce NFC MifareClassic On peut écrire 32 bytes dans le secteur 1 (blocs 1 et 2) et 48 bytes dans les autres
-     * secteurs (blocs 0, 1 et 2)
+     * Write data to a sector of the chip. We can write 32 bytes in sector 1 (block 1 & 2) ans 48 bytes in other sector (block 0, 1 & 2)
      *
-     * @param sector : Secteur dans lequel on souhaite entrer de la data
-     * @param data : information à écrire sur la puce
-     * @param key : Clé permettant l'authentification au secteur
-     * @param useAsKeyB : Si la clé utilisé est la clé A (false) ou la clé B (true)
-     * @return true si les données on bien été transmise
+     * @param sector : Sector that we want to write
+     * @param data : Data that we want to write in a sector (hexa)
+     * @param key : Key for the authentication
+     * @param useAsKeyB : true if we use Key B to write
+     * @return true if data has been sent
+     * @throws TagActionException
      */
     public boolean writeInASector(int sector, String data, byte[] key, boolean useAsKeyB)throws TagActionException;
 
     /**
-     * Ecire dans tout l'espace de la puce NFC (752bytes pour la MifareClassic 1K) Pour cette fonction il faut que tout les secteurs ont la même Key
+     * Write in all space of NFC Chip (752bytes for  MifareClassic 1K). For this, we need to have the same key for all sectors
      *
-     * @param data : Données à transmettre
-     * @param key : clé permettant l'authentification pour écrire
-     * @param useAsKeyB : true si on utilise la keyB false sinon
-     * @return true si les données on bien été transmise
+     * @param data : Data that we want to write(hexa)
+     * @param key : Key for the authentication
+     * @param useAsKeyB : true if we use Key B to write
+     * @return true if data has been sent
      */
     public boolean writeInAllDataSpace(String data, byte[] key, boolean useAsKeyB)throws TagActionException;
 
     /**
-     * Ecriture de la clé A en utilisant la clé A et la clé B
+     * Modify KeyA of 1 Sector with Key A & B
      *
-     * @param sector : Sector dont on veut changer la clé A
-     * @param keyA : Clé A actuelle
-     * @param keyB : Clé B actuelle
-     * @param newKeyA : nouvelle Clé A
+     * @param sector : Sector that we want to write KeyA
+     * @param keyA : Key A  for this sector
+     * @param keyB : Key B  for this sector
+     * @param newKeyA : the new KeyA
      * @return true si les données on bien été transmise
      * @throws TagActionException
      */
     public boolean writeKeyA(int sector,  byte[] keyA, byte[] keyB, byte[] newKeyA) throws TagActionException;
 
     /**
-     * Ecriture de la clé B en utilisant la clé A et la clé B
+     * Modify KeyB of 1 Sector with Key A & B
      *
-     * @param sector : Sector dont on veut changer la clé B
-     * @param keyA : Clé A actuelle
-     * @param keyB : Clé B actuelle
-     * @param newKeyB : nouvelle CléB
+     * @param sector : Sector that we want to write KeyB
+     * @param keyA : Key A  for this sector
+     * @param keyB : Key B  for this sector
+     * @param newKeyB : the new KeyB
      * @return true si les données on bien été transmise
      * @throws TagActionException
      */
     public boolean writeKeyB(int sector, byte[] keyA, byte[] keyB, byte[] newKeyB) throws TagActionException;
 
     /**
-     * Ecriture des AccesBits du Sector Trailer
+     * Write AccesBits of Sector Trailer with Key A & B
      *
-     * @param sector : numéro du secteur dont on souhaite changer les AccessBits
-     * @param keyA : Key A actuelle
-     * @param keyB : Key B actuelle
-     * @param newAccessBit : Nouveau AccesBits du SectorTrailer
-     * @return true si l'écriture c'est bien passé
-     * @throws TagActionException : Action non permise
+     * @param sector : Sector that we want to write AccessBits
+     * @param keyA : Key A  for this sector
+     * @param keyB : Key B  for this sector
+     * @param newAccessBit : new AccesBits for SectorTrailer
+     * @return true if data has been sent
+     * @throws TagActionException
      */
-    public boolean writeAccesBit(int sector, byte[] keyA, byte[] keyB, byte[] newAccessBit) throws TagActionException;
+    public boolean writeAccessBit(int sector, byte[] keyA, byte[] keyB, byte[] newAccessBit) throws TagActionException;
 
 
-    // ///////////////////////////////////////////////////////////////
+    // ////////////////////////////////////////////////////////////
 
-    // Fonctions lectures sur la puce NFC
+    // Read the NFC Chip
 
-    // ///////////////////////////////////////////////////////////////
+    // ////////////////////////////////////////////////////////////
 
     /**
-     * Obtenir le Numéro ID du tag
+     * Get ID of NFC TAG
      *
-     * @return ID du TAG (String)
+     * @return ID of TAG (String)
      */
     public String getId();
 
     /**
-     * Récupère le nombre de bloc dans le TAG NFC
+     * Get count of block of the NFC chip
      *
-     * @return nombre de block de la puce NFC
+     * @return number of block of the NFC chip
      */
     public int getBlockCount();
 
     /**
-     * Récupère le nombre de block dans le secteur en paramètre du tag NFC
+     * Get count of block in a sector of the NFC chip
      *
-     * @param sector : index du secteur dont on souhaite connaitre le nombre de bloc
-     * @return le nombre de bloc dans le secteur demandé
+     * @param sector : Sector whose we want to know the count of block
+     * @return number of block in the sector of the NFC chip
      */
     public int getBlockCountInSector(int sector);
 
     /**
-     * Récupère le nombre de secteur du tag NFC
+     * Get count of sector of the NFC chip
      *
-     * @return nombre de secteur dans la puce NFC
+     * @return number of sector of the NFC chip
      */
     public int getSectorCount();
 
     /**
-     * Lecture d'un bloc de la puce Mifare Classic
+     * Read a block of a sector of the nfc chip
      *
-     * @param block : numéro du bloc à lire
-     * @param sector : Numéro du secteur
-     * @param key : Clé pour lire les données
-     * @param useAsKeyB : Si la clé est la clé B (true) ou la clé A (false)
-     * @return valeur du bloc en String
+     * @param sector : Sector that we want to read
+     * @param block : Block that we want to read
+     * @param key : Key for the authentication
+     * @param useAsKeyB : true if we use Key B to read
+     * @return value of the block (hexadecimal)
      */
     public String readABlock(int sector, int block, byte[] key, boolean useAsKeyB)throws TagActionException;
 
     /**
-     * Lecture d'un secteur
+     *  Read a sector of the nfc chip
      *
-     * @param sector : Numéro du secteur que l'on souhaite lire
-     * @param key : clé permettant l'authentification pour écrire
-     * @param useAsKeyB : true si on utilise la keyB false sinon
-     * @return data (String de hexadécimale)
+     * @param sector : Sector that we want to read
+     * @param key : Key for the authentication
+     * @param useAsKeyB : true if we use Key B to read
+     * @return value of the sector (hexadecimal)
      */
     public String readASector(int sector, byte[] key, boolean useAsKeyB)throws TagActionException;
 
     /**
-     * Lecture de toute la puce (Il faut que la clé soit la m^me pour tout les secteurs)
+     * Read all of the nfc chip.
+     * For this, we need to have the same key for all sectors
      *
-     * @param key : clé permettant l'authentification pour écrire
-     * @param useAsKeyB : true si on utilise la keyB false sinon
-     * @return data (String de hexadécimale)
+     * @param key : Key for the authentication
+     * @param useAsKeyB : true if we use Key B to read
+     * @return value of the NFC chip (hexadecimal)
      */
     public String readAllSpace(byte[] key, boolean useAsKeyB)throws TagActionException;
 
     /**
-     * Obtenir les informations d'un bloc de la puce NFC
+     * Get information for a block
      *
-     * @param sector : Numéro du secteur qui contient le bloc dont on veutdes informations
-     * @param block : Numéro du bloc dont on veut obtenir les informations
-     * @param key : Clé pour accéder aux données
-     * @param useAsKeyB : True si on tuilise la KeyB false sinon
-     * @return
+     * @param sector : Sector
+     * @param block : Block that we want to get information
+     * @param key : Key for the authentication
+     * @param useAsKeyB : true if we use Key B to write
+     * @return <ul>
+     *         <li>Data Block</li>
+     *         <ul>
+     *         <li>1 : Read Write Increment Decrement with key A or B</li>
+     *         <li>2 : Read with key A or B</li>
+     *         <li>3 : Read with key A or B and Write with key B only</li>
+     *         <li>4 : Read Write Increment Decrement with B and read + decrement with key A</li>
+     *         <li>5 : Read Decrement with key A or B</li>
+     *         <li>6 : Read Write with key B</li>
+     *         <li>7 : Read with key B</li>
+     *         <li>8 : Never</li>
+     *         </ul>
+     *         <li>Sector Trailer (We can never read Key A)</li>
+     *         <ul>
+     *         <li>9 : Write KEY A, read acces Bits, read KEY B and write KEY B only with KEY A</li>
+     *         <li>10 : Read Acces Bits and Read Key B oncly with KEY A</li>
+     *         <li>11 : write KEY A, read Acces Bits and Write KEY B with key B or B AND read Access bits with KEY A</li>
+     *         <li>12 : Read Acces bits with KEY A or KEY B</li>
+     *         <li>13 : Write KEY A and B, Read/Write Acces bits and read KEY B with "KEY A"</li>
+     *         <li>14 : Write KEY A and B, Read/Write Acces bits with "KEY B" and read Acces Bits with "KEY A" too</li>
+     *         <li>15 : Read/Write Acces Bits with KEY B and read Acces Bits with KEY A too</li>
+     *         <li>16 : Read Acces Bits with KEY A or B</li>
+     *         </ul>
+     *
+     *         <li>-1 : error</li> </ul>
+     * @throws TagActionException
      */
     public int getInfoForBlock(int sector, int block, byte[] key, boolean useAsKeyB)throws TagActionException;
 
     /**
-     * Obtenir les informations avec les 3 Bits d'Acces
+     * Get information of three access bits
      *
      * @param c1 : bit 1
      * @param c2 : bit 2
      * @param c3 : bit 3
-     * @param isSectorTrailer :True si le bloc est un SectorTrailer
+     * @param isSectorTrailer :True if block is SectorTrailer
      * @return
      *
      *         <ul>
@@ -194,10 +216,10 @@ public interface INfc {
      *         <li>-1 : error</li> </ul>
      *
      */
-    public int ReadAccesBits(byte c1, byte c2, byte c3, boolean isSectorTrailer);
+    public int ReadAccessBits(byte c1, byte c2, byte c3, boolean isSectorTrailer);
 
     /**
-     * Création des 4 bytes d'AccessBit pour le sectorTrailer
+     * Creation of 4 bytes  of access bits for the sectorTrailer
      *
      * @Explication <ul>
      *              <li>Data Block</li>
@@ -224,35 +246,35 @@ public interface INfc {
      *              </ul>
      *
      *
-     * @param permB0 : permission pour le bloc 0 compris entre 1 et 8
-     * @param permB1 : permission pour le bloc 1 compris entre 1 et 8
-     * @param permB2 : permission pour le bloc 2 compris entre 1 et 8
-     * @param permSectorTrailer : : permission pour le bloc 3 (sector Trailer) compris entre 9 et 16
-     * @return 4 bytes d'AccesBit du SectorTrailer
+     * @param permB0 : permission for block 0 between 1 et 8
+     * @param permB1 : permission for block 1 between 1 et 8
+     * @param permB2 : permission for block 2 between 1 et 8
+     * @param permSectorTrailer : : permission for block 3 (sector Trailer) between 9 et 16
+     * @return 4 bytes of AccesBit of SectorTrailer
      */
     public byte[] createAccessBit(int permB0, int permB1, int permB2, int permSectorTrailer);
 
     /**
-     * Convertir une chaine hexadécimale en une chaine de caractère
+     * Convert hexadecimal string to an ascii string
      *
-     * @param s : chaine hexadécimale à convertir
-     * @return chaine en Ascii
+     * @param s : hexadecimal string to convert
+     * @return ascii string
      */
     public String hexToAscii(String s);
 
     /**
-     * Convertir un caractère en décimal
+     * Convert character to decimal
      *
-     * @param ch : charactère à convertir
-     * @return valeur du caractère en décimal
+     * @param ch : character  to convert
+     * @return value of character in decimal
      */
     public int hexToInt(char ch);
 
     /**
-     * Convertir une chaine de caractère en une chaine hexadécimale
+     * Convert ascii string  to a hexadecimal string
      *
-     * @param arg : chaine de charactère
-     * @return chaine en hexadécimale
+     * @param arg : ascii string to convert
+     * @return hexadecimal string
      */
     public String toHex(String arg);
 

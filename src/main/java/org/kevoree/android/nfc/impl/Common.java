@@ -254,12 +254,6 @@ public class Common {
             mTag = tag;
             mUID = tag.getId();
 
-            // Show Toast message with UID.
-            String id = " (UID: ";
-            id += byte2HexString(tag.getId());
-            id += ")";
-//			Toast.makeText(context, id, Toast.LENGTH_LONG).show();
-
             // Return "1" if device supports Mifare Classic. "0" otherwise.
             return (Arrays.asList(tag.getTechList()).contains(MifareClassic.class.getName())) ? 1 : 0;
         }
